@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://github.com/mozilla/geckodriver/releases
+HostUrl=https://objects.githubusercontent.com/github-production-release-asset-2e65be/25354393/4d68edb7-f9e7-4e9a-aa80-1967a80243a5?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=releaseassetproduction%2F20241115%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241115T204628Z&X-Amz-Expires=300&X-Amz-Signature=855d72b532a0e49bb19c5c11af78b2da7957e551126b8265425e449089a0daf0&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3Dgeckodriver-v0.35.0-linux64.tar.gz&response-content-type=application%2Foctet-stream
