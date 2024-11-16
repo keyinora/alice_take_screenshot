@@ -1,98 +1,56 @@
-import os
-import time
-import sys
-from datetime import datetime
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.firefox.service import Service
-from PIL import Image, ImageChops
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time
+import datetime
 
-# Determine URL based on command-line arguments
-url = sys.argv[1] if len(sys.argv) > 1 else "https://captivation.agency/"
-print(f"[INFO] URL to monitor: {url}")
 
-# Setup Firefox options
-firefox_options = FirefoxOptions()
-firefox_options.add_argument('--headless')
-firefox_options.add_argument('--disable-gpu')
-firefox_options.add_argument('--window-size=1920x1080')
-print("[INFO] Firefox options configured")
+# Define the main function
+def main():
+    # Step 1: Set up the Chrome WebDriver with headless option
+    print("[Step 1] Setting up Chrome WebDriver...")
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run Chrome in headless mode
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
 
-# Create Firefox WebDriver with manually specified GeckoDriver path and increased timeout
-print("[INFO] Setting up Firefox WebDriver...")
-service = Service("/usr/local/bin/geckodriver", timeout=300)  # Update the path if different and increase timeout
-try:
-    browser = webdriver.Firefox(service=service, options=firefox_options)
-    print("[INFO] Firefox WebDriver created successfully")
-except Exception as e:
-    print(f"[ERROR] Failed to create WebDriver: {e}")
-    sys.exit(1)
+    service = Service('/usr/bin/chromedriver')
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
-# Specify the URL to monitor
-domain = url.split('//')[-1].split('/')[0]
-domain_folder = os.path.join(os.getcwd(), domain)
+    # Step 2: Open Google
+    site_name = "Captivation Agency"
+    print("f[Step 2] Opening {site_name}...")
+    url = "https://captivation.agency/"
+    driver.get(url)
 
-# Create a folder for the domain if it doesn't exist
-if not os.path.exists(domain_folder):
-    os.makedirs(domain_folder)
-    print(f"[INFO] Created directory for domain: {domain_folder}")
-else:
-    print(f"[INFO] Using existing directory for domain: {domain_folder}")
+    # Step 3: Wait for the page to fully load
+    print("[Step 3] Waiting for the page to fully load...")
+    time.sleep(10)
 
-# Load the page and take a screenshot
-print(f"[INFO] Loading URL: {url}")
-browser.get(url)
-time.sleep(5)  # Wait for page to load completely
-print("[INFO] Page loaded, taking screenshot...")
-screenshot_path = os.path.join(domain_folder, f"{domain}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
-browser.save_screenshot(screenshot_path)
-print(f"[INFO] Screenshot saved at: {screenshot_path}")
+    # Step 4: Adjust the window size to capture the whole page
+    print("[Step 4] Adjusting window size to capture the full page...")
+    page_width = driver.execute_script("return document.body.scrollWidth")
+    page_height = driver.execute_script("return document.body.scrollHeight")
+    
+    driver.set_window_size(page_width, page_height)
 
-# Close the browser
-browser.quit()
-print("[INFO] Browser closed")
+    # Step 5: Slowly scroll from the top of the page to the bottom
+    print("[Step 5] Scrolling through the page...")
+    scroll_height = driver.execute_script("return document.body.scrollHeight")
+    for scroll_position in range(0, scroll_height, 500):
+        driver.execute_script(f"window.scrollTo(0, {scroll_position});")
+        time.sleep(0.5)
 
-# Log the screenshot action
-log_path = os.path.join(domain_folder, "log.txt")
-with open(log_path, "a") as log_file:
-    log_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Screenshot taken: {screenshot_path}\n"
-    log_file.write(log_message)
-    print(f"[LOG] {log_message.strip()}")
+    # Step 6: Take a screenshot of the loaded page
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    screenshot_filename = f"{url.replace('https://', '').replace('/', '')}-{timestamp}.png"
+    print(f"[Step 6] Taking a screenshot and saving it as '{screenshot_filename}'...")
+    driver.save_screenshot(screenshot_filename)
 
-# Compare screenshots if there's more than one
-screenshots = sorted([f for f in os.listdir(domain_folder) if f.endswith('.png')])
-if len(screenshots) > 1:
-    print("[INFO] Comparing screenshots...")
-    latest_screenshot = Image.open(os.path.join(domain_folder, screenshots[-1]))
-    previous_screenshot = Image.open(os.path.join(domain_folder, screenshots[-2]))
+    # Step 7: Close the browser
+    print("[Step 7] Closing the browser...")
+    driver.quit()
 
-    # Compare images
-    diff = ImageChops.difference(latest_screenshot, previous_screenshot)
-    diff_bbox = diff.getbbox()
-
-    # Calculate pixel difference ratio
-    diff_pixels = diff.crop(diff_bbox).getdata() if diff_bbox else []
-    diff_ratio = len(diff_pixels) / (latest_screenshot.width * latest_screenshot.height)
-
-    # Log the comparison result
-    with open(log_path, "a") as log_file:
-        log_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Pixel difference ratio: {diff_ratio:.2%}\n"
-        log_file.write(log_message)
-        print(f"[LOG] {log_message.strip()}")
-else:
-    print("[INFO] Not enough screenshots to compare")
-
-# Delete the oldest screenshot if there are more than two
-if len(screenshots) > 2:
-    oldest_screenshot = os.path.join(domain_folder, screenshots[0])
-    os.remove(oldest_screenshot)
-    print(f"[INFO] Deleted oldest screenshot: {oldest_screenshot}")
-
-    # Log the deletion
-    with open(log_path, "a") as log_file:
-        log_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Deleted oldest screenshot: {oldest_screenshot}\n"
-        log_file.write(log_message)
-        print(f"[LOG] {log_message.strip()}")
-else:
-    print("[INFO] No screenshots to delete")
+# Run the main function
+if __name__ == "__main__":
+    main()
